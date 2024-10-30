@@ -4,3 +4,33 @@ DEBUG:urllib3.connectionpool:https://huggingface.co:443 "HEAD /facebook/bart-lar
 DEBUG:urllib3.connectionpool:https://huggingface.co:443 "HEAD /facebook/bart-large-cnn/resolve/main/config.json HTTP/11" 200 0
 DEBUG:urllib3.connectionpool:https://huggingface.co:443 "HEAD /facebook/bart-large-cnn/resolve/main/config.json HTTP/11" 200 0
 DEBUG:urllib3.connectionpool:https://huggingface.co:443 "HEAD /facebook/bart-large-cnn/resolve/main/generation_config.json HTTP/11" 200 0
+INFO:root:Response generated. with model : mistral:latest
+DEBUG:httpcore.connection:connect_tcp.started host='127.0.0.1' port=11434 local_address=None timeout=None socket_options=None
+DEBUG:httpcore.connection:connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x732bcc4d3290>
+DEBUG:httpcore.http11:send_request_headers.started request=<Request [b'POST']>
+DEBUG:httpcore.http11:send_request_headers.complete
+DEBUG:httpcore.http11:send_request_body.started request=<Request [b'POST']>
+DEBUG:httpcore.http11:send_request_body.complete
+DEBUG:httpcore.http11:receive_response_headers.started request=<Request [b'POST']>
+DEBUG:httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/x-ndjson'), (b'Date', b'Wed, 30 Oct 2024 15:19:56 GMT'), (b'Transfer-Encoding', b'chunked')])
+INFO:httpx:HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+DEBUG:httpcore.http11:receive_response_body.started request=<Request [b'POST']>
+DEBUG:httpcore.http11:receive_response_body.complete
+DEBUG:httpcore.http11:response_closed.started
+DEBUG:httpcore.http11:response_closed.complete
+INFO:root:Response generated. with model : mistral:latest
+DEBUG:httpcore.connection:close.started
+DEBUG:httpcore.connection:close.complete
+DEBUG:httpcore.connection:connect_tcp.started host='127.0.0.1' port=11434 local_address=None timeout=None socket_options=None
+DEBUG:httpcore.connection:connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x732bf49ee3c0>
+DEBUG:httpcore.http11:send_request_headers.started request=<Request [b'POST']>
+DEBUG:httpcore.http11:send_request_headers.complete
+DEBUG:httpcore.http11:send_request_body.started request=<Request [b'POST']>
+DEBUG:httpcore.http11:send_request_body.complete
+DEBUG:httpcore.http11:receive_response_headers.started request=<Request [b'POST']>
+DEBUG:httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/x-ndjson'), (b'Date', b'Wed, 30 Oct 2024 15:20:02 GMT'), (b'Transfer-Encoding', b'chunked')])
+INFO:httpx:HTTP Request: POST http://127.0.0.1:11434/api/generate "HTTP/1.1 200 OK"
+DEBUG:httpcore.http11:receive_response_body.started request=<Request [b'POST']>
+DEBUG:httpcore.http11:receive_response_body.complete
+DEBUG:httpcore.http11:response_closed.started
+DEBUG:httpcore.http11:response_closed.complete
