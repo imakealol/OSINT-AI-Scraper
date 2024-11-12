@@ -10,7 +10,6 @@ class Bot:
     def __init__(self, model:str="mistral:latest", ollama_options=None):
         self.model = model
         self._ollama_option = ollama_options if ollama_options else {'temperature': 1}
-        # self._ollama_options.update({'temperature': 1})
         self.memory = ChatbotMemory()
         self.running = False
         self.response = ""
@@ -38,7 +37,7 @@ class Bot:
             stream=True,
             options=self._ollama_option
         )
-        # print(f"Response generated. with model : {self.model}")
+        
         logging.info(f"Response generated. with model : {self.model}")
         
         self.response = ""
