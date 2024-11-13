@@ -1,7 +1,6 @@
 // Select all elements with the jscontroller attribute set to "SC7lYd"
 const organicResults = { "organic_results": [] };
-const results = document.querySelectorAll('[jscontroller="SC7lYd"], [jsname="pKB8Bc"]:not([jscontroller])');
-
+const results = document.querySelectorAll('[jscontroller="SC7lYd"], [jsname="pKB8Bc"]:not([jscontroller]):not(.X4T0U)');
 
 results.forEach((result, index) => {
     // Retrieve elements, defaulting to an empty string if not found
