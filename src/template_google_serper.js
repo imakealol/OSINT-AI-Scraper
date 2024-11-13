@@ -9,7 +9,7 @@ results.forEach((result, index) => {
     const displayedLink = result.querySelector("cite")?.innerText || "";
     const link = result.querySelector('[jsname="UWckNb"]')?.getAttribute("href") || "";
     const date = result.querySelector(".LEwnzc.Sqrs4e span")?.innerText || "";
-    const title = result.querySelector(".LC20lb.MBeuO.DKV0Md").innerText || "";
+    const title = result.querySelector(".LC20lb.MBeuO.DKV0Md")?.innerText || "";
     
     // Get the snippet element's text content, or default to an empty string
     const snippetElement = result.querySelector(".VwiC3b.yXK7lf.lVm3ye.r025kc.hJNv6b") || result.querySelector(".fzUZNc");
