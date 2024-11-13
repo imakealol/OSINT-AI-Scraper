@@ -9,6 +9,7 @@ results.forEach((result, index) => {
     const displayedLink = result.querySelector("cite")?.innerText || "";
     const link = result.querySelector('[jsname="UWckNb"]')?.getAttribute("href") || "";
     const date = result.querySelector(".LEwnzc.Sqrs4e span")?.innerText || "";
+    const title = result.querySelector(".LC20lb.MBeuO.DKV0Md").innerText || "";
     
     // Get the snippet element's text content, or default to an empty string
     const snippetElement = result.querySelector(".VwiC3b.yXK7lf.lVm3ye.r025kc.hJNv6b") || result.querySelector(".fzUZNc");
@@ -19,6 +20,7 @@ results.forEach((result, index) => {
     // Add to the organic results
     organicResults.organic_results.push({
         "position": index + 1,
+        "title": title,
         "source_name": sourceName,
         "displayed_link": displayedLink,
         "link": link,
