@@ -1,6 +1,5 @@
-// Select all elements with the jscontroller attribute set to "SC7lYd"
-const organicResults = { "organic_results": [] };
-const results = document.querySelectorAll('[jscontroller="SC7lYd"], [jsname="pKB8Bc"]:not([jscontroller]):not(.X4T0U)');
+var organicResults = { "organic_results": [] };
+var results = document.querySelectorAll('.BYM4Nd, [jscontroller="SC7lYd"], [jsname="pKB8Bc"]:not([jscontroller]):not(.X4T0U)');
 
 results.forEach((result, index) => {
     // Retrieve elements, defaulting to an empty string if not found
@@ -9,12 +8,10 @@ results.forEach((result, index) => {
     const link = result.querySelector('[jsname="UWckNb"]')?.getAttribute("href") || "";
     const date = result.querySelector(".LEwnzc.Sqrs4e span")?.innerText || "";
     const title = result.querySelector(".LC20lb.MBeuO.DKV0Md")?.innerText || "";
-    
-    // Get the snippet element's text content, or default to an empty string
-    const snippetElement = result.querySelector(".VwiC3b.yXK7lf.lVm3ye.r025kc.hJNv6b") || result.querySelector(".fzUZNc");
-    const snippetText = snippetElement?.lastChild?.nodeType === Node.TEXT_NODE 
-        ? snippetElement.lastChild.nodeValue.trim() 
-        : snippetElement?.innerText.trim() || "";
+    const snippetContainer = result.querySelector('.VwiC3b');
+    const snippet = snippetContainer.lastChild.nodeType === Node.TEXT_NODE 
+    ? snippetContainer.lastChild.textContent.trim() 
+    : snippetContainer.lastElementChild.innerText;
 
     // Add to the organic results
     organicResults.organic_results.push({
@@ -24,8 +21,8 @@ results.forEach((result, index) => {
         "displayed_link": displayedLink,
         "link": link,
         "date": date,
-        "snippet": snippetText
+        "snippet": snippet
     });
 });
 
-console.log(organicResults);
+return organicResults
