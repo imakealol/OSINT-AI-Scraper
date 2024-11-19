@@ -1,7 +1,8 @@
 var organicResults = { "organic_results": [] };
 var results = document.querySelectorAll('.BYM4Nd, [jscontroller="SC7lYd"], [jsname="pKB8Bc"]:not([jscontroller]):not(.X4T0U)');
+var index = arguments[0];
 
-results.forEach((result, index) => {
+results.forEach((result) => {
     // Retrieve elements, defaulting to an empty string if not found
     const sourceName = result.querySelector(".VuuXrf")?.innerText || "";
     const displayedLink = result.querySelector("cite")?.innerText || "";
@@ -15,7 +16,7 @@ results.forEach((result, index) => {
 
     // Add to the organic results
     organicResults.organic_results.push({
-        "position": index + 1,
+        "position": index,
         "title": title,
         "source_name": sourceName,
         "displayed_link": displayedLink,
@@ -23,6 +24,8 @@ results.forEach((result, index) => {
         "date": date,
         "snippet": snippet
     });
+    
+    index++;
 });
 
-return organicResults
+return [organicResults, index];

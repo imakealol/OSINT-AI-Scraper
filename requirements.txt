@@ -1,3 +1,5 @@
 ollama
 shortterm-memory
 seleniumbase
+undetected-chromedriver
+selenium
