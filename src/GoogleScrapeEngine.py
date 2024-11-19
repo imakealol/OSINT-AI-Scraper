@@ -1,6 +1,5 @@
 from seleniumbase import SB  # Import the SeleniumBase Manager
 from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
-import json
 
 class GoogleSE:
     def __init__(self):
@@ -58,6 +57,7 @@ class GoogleSE:
     
 # Run the function
 if __name__ == "__main__":
+    import json
     # Example usage
 
     # Create an instance of the GoogleSE class
