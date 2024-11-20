@@ -1,5 +1,6 @@
 from seleniumbase import SB  # Import the SeleniumBase Manager
 from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
+from random import randint
 
 class GoogleSE:
     def __init__(self):
@@ -21,39 +22,37 @@ class GoogleSE:
         
         # Return the new URL
         return urlunparse(parsed_url._replace(query=updated_query))
-        
     def serp_organic_results(self, query: str, page_num: int) -> dict | None:
-        try:
             if page_num < 1:
                 raise ValueError("Page number should be greater or equal to 1")
             with SB(
                 undetectable=True,
-                headless2=True
+                headless2=True,
             ) as sb:  # Initialize SeleniumBase Manager
                 with open("src/google_serper.js", "r") as GS_file:
                     GS_script = GS_file.read()
                     sb.open("https://google.com")
+
                     # Accept cookies if present
-                    if sb.is_element_present("#W0wltc"):
-                        sb.slow_click("#W0wltc")
-                    # Type the query in the search box using the selector
-                    sb.type('//*[@id="APjFqb"]', query+"\n")  # Type in search query
+                    sb.js_click_if_present("#W0wltc")
+                    
+                    # Type the query in the search box
+                    sb.type('//*[@id="APjFqb"]', query+"\n")
                     
                     sb.wait_for_ready_state_complete()
 
+                    # Update the page number (if different to 1) once the page is loaded and thus when the url is formed
                     if page_num != 1:
                         current_url = sb.get_current_url()
+                        # Update the start parameter in the URL to navigate to the wanted page
                         updated_url = self.update_url_param(current_url, "start", str((page_num-1)*10))
                         sb.open(updated_url)
                         sb.wait_for_ready_state_complete()
 
                     organic_results, self.position_index = sb.execute_script(GS_script, self.position_index)
+                    links_status = [organic_results for result in organic_results["organic_results"] if result["link"] != 200]
 
                     return organic_results
-        except Exception as e:
-            print(e)
-            return None
-            
     
 # Run the function
 if __name__ == "__main__":
@@ -64,9 +63,9 @@ if __name__ == "__main__":
     google = GoogleSE()
 
     # Get the first page of organic results for the query "youtube"
-    print(json.dumps(google.serp_organic_results("youtube", 1), sort_keys=True, indent=4))
+    print(json.dumps(google.serp_organic_results("ok", 1), sort_keys=True, indent=4))
 
     # Get the second page of organic results for the query "youtube"
     # Note: The position index will be updated to the next position on the second page
     google.increment_page()
-    print(json.dumps(google.serp_organic_results("youtube", 2), sort_keys=True, indent=4))
+    print(json.dumps(google.serp_organic_results("ok", 2), sort_keys=True, indent=4))

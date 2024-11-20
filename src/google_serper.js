@@ -10,9 +10,9 @@ results.forEach((result) => {
     const date = result.querySelector(".LEwnzc.Sqrs4e span")?.innerText || "";
     const title = result.querySelector(".LC20lb.MBeuO.DKV0Md")?.innerText || "";
     const snippetContainer = result.querySelector('.VwiC3b');
-    const snippet = snippetContainer.lastChild.nodeType === Node.TEXT_NODE 
-    ? snippetContainer.lastChild.textContent.trim() 
-    : snippetContainer.lastElementChild.innerText;
+    const snippet = snippetContainer?.lastChild.nodeType === Node.TEXT_NODE 
+    ? snippetContainer?.lastChild.textContent.trim()
+    : snippetContainer?.lastElementChild.innerText;
 
     // Add to the organic results
     organicResults.organic_results.push({
