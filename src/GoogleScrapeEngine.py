@@ -1,6 +1,7 @@
 from seleniumbase import SB  # Import the SeleniumBase Manager
 from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
 from random import randint
+import concurrent.futures
 
 class GoogleSE:
     def __init__(self):
@@ -22,6 +23,10 @@ class GoogleSE:
         
         # Return the new URL
         return urlunparse(parsed_url._replace(query=updated_query))
+    def check_link_status(self, sb, link):
+        # Check the link status (alive or dead)
+        status_code = sb.get_link_status_code(link)
+        return "alive" if status_code != 404 else "dead"
     def serp_organic_results(self, query: str, page_num: int) -> dict | None:
             if page_num < 1:
                 raise ValueError("Page number should be greater or equal to 1")
@@ -29,6 +34,7 @@ class GoogleSE:
                 undetectable=True,
                 headless2=True,
             ) as sb:  # Initialize SeleniumBase Manager
+                print("https://www.production22.lys-call-services.com/ftp/gasy-data/ARCHIVES%20PC%20CLAUDIA/CLAUDIA-2016/DEALYS/SUIVI%20DES%20PAIEMENTS%20SYSTEMATIC%20NOVEMBRE%202016.xlsx")
                 with open("src/google_serper.js", "r") as GS_file:
                     GS_script = GS_file.read()
                     sb.open("https://google.com")
@@ -50,7 +56,15 @@ class GoogleSE:
                         sb.wait_for_ready_state_complete()
 
                     organic_results, self.position_index = sb.execute_script(GS_script, self.position_index)
-                    links_status = [organic_results for result in organic_results["organic_results"] if result["link"] != 200]
+                    
+                    # Use ThreadPoolExecutor to check link statuses concurrently
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+                        # Map each result's link to the check_link_status method
+                        link_statuses = list(executor.map(self.check_link_status, [sb]*len(organic_results["organic_results"]), [result["link"] for result in organic_results["organic_results"]]))
+
+                    # Add link_status to each result in organic_results
+                    for idx, result in enumerate(organic_results["organic_results"]):
+                        result["link_status"] = link_statuses[idx]
 
                     return organic_results
     
@@ -63,9 +77,9 @@ if __name__ == "__main__":
     google = GoogleSE()
 
     # Get the first page of organic results for the query "youtube"
-    print(json.dumps(google.serp_organic_results("ok", 1), sort_keys=True, indent=4))
+    print(json.dumps(google.serp_organic_results('"pacte novation" filetype:xlsx', 1), sort_keys=True, indent=4))
 
     # Get the second page of organic results for the query "youtube"
     # Note: The position index will be updated to the next position on the second page
     google.increment_page()
-    print(json.dumps(google.serp_organic_results("ok", 2), sort_keys=True, indent=4))
+    print(json.dumps(google.serp_organic_results('"pacte novation" filetype:xlsx', 2), sort_keys=True, indent=4))
