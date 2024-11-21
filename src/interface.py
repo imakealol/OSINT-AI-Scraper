@@ -1,7 +1,7 @@
-from src.Bot import Bot
+from Bot2 import OllamaModel
 
 def main():
-    bot = Bot()
+    bot = OllamaModel(model="mistral:latest")
     
     print("Bienvenue dans le chat terminal ! Tapez '/quit' pour quitter.")
     

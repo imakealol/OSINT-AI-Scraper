@@ -1,3 +1,6 @@
 ollama
 shortterm-memory
 seleniumbase
+langchain_ollama
+langchain
+langchain-community
