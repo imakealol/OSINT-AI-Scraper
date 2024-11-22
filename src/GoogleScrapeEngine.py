@@ -1,6 +1,5 @@
 from seleniumbase import SB  # Import the SeleniumBase Manager
 from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
-from random import randint
 import concurrent.futures
 
 class GoogleSE:
@@ -34,7 +33,6 @@ class GoogleSE:
                 undetectable=True,
                 headless2=True,
             ) as sb:  # Initialize SeleniumBase Manager
-                print("https://www.production22.lys-call-services.com/ftp/gasy-data/ARCHIVES%20PC%20CLAUDIA/CLAUDIA-2016/DEALYS/SUIVI%20DES%20PAIEMENTS%20SYSTEMATIC%20NOVEMBRE%202016.xlsx")
                 with open("src/google_serper.js", "r") as GS_file:
                     GS_script = GS_file.read()
                     sb.open("https://google.com")
@@ -72,14 +70,13 @@ class GoogleSE:
 if __name__ == "__main__":
     import json
     # Example usage
-
     # Create an instance of the GoogleSE class
     google = GoogleSE()
 
     # Get the first page of organic results for the query "youtube"
-    print(json.dumps(google.serp_organic_results('"pacte novation" filetype:xlsx', 1), sort_keys=True, indent=4))
+    print(json.dumps(google.serp_organic_results(query='"pacte novation" filetype:doc', page_num=1), sort_keys=True, indent=4))
 
     # Get the second page of organic results for the query "youtube"
-    # Note: The position index will be updated to the next position on the second page
+    # Note: We need to notify the GoogleSE instance that we are navigating to the next page so that the position index gets updated to its right value
     google.increment_page()
-    print(json.dumps(google.serp_organic_results('"pacte novation" filetype:xlsx', 2), sort_keys=True, indent=4))
+    print(json.dumps(google.serp_organic_results(query='"pacte novation" filetype:doc', page_num=2), sort_keys=True, indent=4))
