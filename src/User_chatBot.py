@@ -1,8 +1,8 @@
 from langchain_ollama.llms import OllamaLLM
-from langchain.memory import ConversationSummaryMemory, ChatMessageHistory
-from langchain.llms.base import BaseLanguageModel
+from langchain.memory import ConversationSummaryMemory
+# from langchain.llms.base import BaseLanguageModel
 
-class OllamaModel:
+class User_chatBot:
     def __init__(self, model:str = "mistral:latest", ollama_options:dict = None):
         self.ollama_model = OllamaLLM(
             model=model,
@@ -55,5 +55,5 @@ class OllamaModel:
         return 0
     
 if __name__ == "__main__":
-    model = OllamaModel(model="mistral:latest")
+    model = User_chatBot(model="mistral:latest")
     model.ans("Hello")

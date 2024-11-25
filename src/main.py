@@ -1,7 +1,7 @@
-from Bot2 import OllamaModel
+from User_chatBot import User_chatBot
 
 def main():
-    bot = OllamaModel(model="mistral:latest")
+    bot = User_chatBot(model="mistral:latest")
     
     print("Bienvenue dans le chat terminal ! Tapez '/quit' pour quitter.")
     
@@ -20,6 +20,18 @@ def main():
         for chunk in response_generator:
             print(chunk, end="", flush=True)
         print() 
+        
+def print_magnifying_glass():
+    print("       ___")
+    print("     /     \\")
+    print("    |       |")
+    print("     \\ ___ /")
+    print("       \\ /")
+    print("        V")
+    print("        |")
+    print("        |")
+    print()
 
 if __name__ == "__main__":
+    print_magnifying_glass()
     main()

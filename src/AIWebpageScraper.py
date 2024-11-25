@@ -15,7 +15,6 @@ class AIWebpageScraper:
         try:
             with SB(undetectable=True, headless2=True) as sb:
                 sb.open(self.url)
-                sb.wait_for_element_visible("body", timeout=10)  # Ensure the body is rendered
                 page_source = sb.get_page_source()
                 return page_source
 
