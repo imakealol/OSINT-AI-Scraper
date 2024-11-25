@@ -1,34 +1,46 @@
-from langchain_chroma import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.docstore.document import Document as LangchainDocument
-import datasets
+from sentence_transformers import SentenceTransformer
+import os
+import io
 from tqdm import tqdm
+from langchain_chroma import Chroma
+from langchain_core.documents import Document
 
-docs = datasets.load_dataset("src/docs", split="train")
+class Rag:
+    def __init__(self, model_name='all-MiniLM-L6-v2', index_path='faiss_index'):
+        self.model = SentenceTransformer(model_name)
+        self.chroma = Chroma(
+            collection_name="my_document_collection",
+            embedding_function=self.model,
+            persist_directory=index_path,
+            create_collection_if_not_exists=True
+        )
 
-RAW_KNOWLEDGE_BASE = [
-    LangchainDocument(page_content=doc["text"], metadata={"source": doc["source"]}) for doc in tqdm(docs)
-]
+    def add(self, docs:dict{str, [str, str, str]}):
+        """ Add a batch of documents to Chroma index. """
+        id = 0
+        documents = []
+        ids = []
+        for dc in docs:
+            with io.open(os.path(dc), 'r', encoding='utf8') as file:
+                content = file.read()
+                doc_n = Document(page_content=content, metadata={"source": dc})
+                documents.append(doc_n)
+                id=+1
+                ids.append(id)
+            
+        self.chroma.add_documents(documents=documents, ids=ids)
 
-MARKDOWN_SEPARATORS = [
-    "\n#{1,6} ",
-    "```\n",
-    "\n\\*\\*\\*+\n",
-    "\n---+\n",
-    "\n___+\n",
-    "\n\n",
-    "\n",
-    " ",
-    "",
-]
+    def search(self, query, k=5):
+        """ Search the Chroma index for the most similar documents. """
+        results = self.chroma.search(query, top_k=k)
+        return results
 
-class Rag :
-    def __init__(self):
-        self.spliter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,  # The maximum number of characters in a chunk: we selected this value arbitrarily
-            chunk_overlap=100,  # The number of characters to overlap between chunks
-            add_start_index=True,  # If `True`, includes chunk's start index in metadata
-            strip_whitespace=True,  # If `True`, strips whitespace from the start and end of every document
-            separators=MARKDOWN_SEPARATORS,
-)
-        
+if __name__ == "__main__":
+    docs_directory = "src/docs"
+    rag = Rag()
+    rag.add(docs)
+    query = "Quelle est la vitesse pour remonter le temps ?"
+    results = rag.search(query)
+    for result in results:
+        # print(f"Document ID: {result['document'].id}, Score: {result['score']}")
+        print(result)
