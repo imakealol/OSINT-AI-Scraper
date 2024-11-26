@@ -9,8 +9,8 @@ import shutil
 
 class Rag:
     def __init__(self, index_path='chroma_db'):
-        set_debug(True)
-        set_verbose(True)
+        # set_debug(True)
+        # set_verbose(True)
         
         self.index_path = index_path
         self.embeddings = FastEmbedEmbeddings()
@@ -76,7 +76,7 @@ class Rag:
     def search(self, query: str, k: int = 3) -> str:
         """Recherche les documents pertinents"""
         if not self.vector_store:
-            return "Aucun document n'a été chargé dans la base de connaissances."
+            return ""
         
         # Recherche des documents pertinents
         results = self.vector_store.similarity_search_with_score(
@@ -89,6 +89,8 @@ class Rag:
         seen_docs = set()  # Pour éviter les doublons
         
         for doc, score in sorted(results, key=lambda x: x[1]):
+            if score > 1:
+                return ""
             # Extraction des métadonnées
             title = doc.metadata.get('page_title', 'Sans titre')
             url = doc.metadata.get('page_url', 'URL non disponible')
@@ -109,7 +111,7 @@ class Rag:
                 )
                 context.append(context_entry)
         
-        return "\n\n".join(context) if context else "Aucune information pertinente trouvée."
+        return "\n\n".join(context) if context else ""
 
     def clear(self):
         """Nettoie la base de connaissances (à appeler avec /quit)"""
