@@ -17,6 +17,8 @@ class User_chatBot:
         # Initialisation des composants
         self.web_tools = WebTools()
         self.tools = self.web_tools.get_tools()
+        self.llm_with_tools = self.ollama_model.bind_tools(self.tools)
+
         self.rag = Rag()
         self.output = ""
         
