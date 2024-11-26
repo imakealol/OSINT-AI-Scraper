@@ -1,4 +1,5 @@
 from User_chatBot import User_chatBot
+import asyncio
 import os
 import sys
 
@@ -17,8 +18,8 @@ def print_welcome():
     print("=" * 50)
     print()
 
-def main():
-    # Désactiver la sortie de débogage !!!
+async def main():
+    # Désactiver la sortie de débogage
     if not sys.flags.debug:
         sys.tracebacklimit = 0
     
@@ -49,7 +50,7 @@ def main():
             
             print("\nAssistant:", end=" ", flush=True)
             
-            for chunk in bot.ans(user_input):
+            async for chunk in bot.ans(user_input):
                 print(chunk, end="", flush=True)
             print()
             
@@ -61,7 +62,7 @@ def main():
 
 if __name__ == "__main__":
     try:
-        main()
+        asyncio.run(main())
     except Exception as e:
         print(f"\nErreur fatale: {str(e)}")
         sys.exit(1)
