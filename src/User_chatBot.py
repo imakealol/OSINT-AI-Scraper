@@ -1,9 +1,11 @@
 from langchain_ollama.llms import OllamaLLM
 from langchain.memory import ConversationSummaryMemory
+from rag.Rag import Rag
 # from langchain.llms.base import BaseLanguageModel
 
 class User_chatBot:
     def __init__(self, model:str = "mistral:latest", ollama_options:dict = None):
+        
         self.ollama_model = OllamaLLM(
             model=model,
             options=ollama_options if ollama_options else {'temperature': 1} # vérifier le paramétrage de la température 0 pour déterministe langchain et 1 pour ollama_python
@@ -12,6 +14,7 @@ class User_chatBot:
         ConversationSummaryMemory.model_rebuild()
         self.history = ConversationSummaryMemory(llm=self.ollama_model)
         self.running = False
+        self.rag = Rag()
         
     def ans(self, input: str):
         prompt: str
@@ -20,13 +23,15 @@ class User_chatBot:
         self.output = ""
         
         mem = self.history.load_memory_variables({}).get('history', "")
+
+        context = self.rag.search(input)
         
         prompt = (
             "Vous êtes un assistant intelligent. Utilisez les informations suivantes pour aider l'utilisateur.\n\n"
             "Mémoire du chatbot (à ne pas montrer à l'utilisateur) :\n"
             f"{mem}\n\n"
-            # "Contexte pertinent :\n"
-            # f"{context}\n\n"
+            "Contexte pertinent :\n"
+            f"{context}\n\n"
             "Question de l'utilisateur :\n"
             f"{input}\n\n"
             "Répondez de manière claire et CONCISE et avec une mise en forme lisible et structuré :\n"

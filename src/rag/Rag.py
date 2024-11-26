@@ -1,69 +1,157 @@
-from langchain_ollama import OllamaEmbeddings
-# from langchain_ollama.llms import OllamaLLM
-from langchain_chroma import Chroma
+from langchain_core.globals import set_verbose, set_debug
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_core.documents import Document
-from langchain_core.vectorstores import InMemoryVectorStore
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 import asyncio
+import os
+import shutil
 
 class Rag:
-    def __init__(self, index_path='faiss_index'):
-        self.model = OllamaEmbeddings(model="llama3")
-        self.vector_store = Chroma(
-            collection_name="my_document_collection",
-            embedding_function=self.model,
-            persist_directory=index_path,
-            create_collection_if_not_exists=True
+    def __init__(self, index_path='chroma_db'):
+        set_debug(True)
+        set_verbose(True)
+        
+        self.index_path = index_path
+        self.embeddings = FastEmbedEmbeddings()
+        self.text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1024,
+            chunk_overlap=100
         )
-        # self.vector_store = InMemoryVectorStore(embedding=self.model)
+        
+        # Création d'une nouvelle session
+        self._initialize_session()
+
+    def _initialize_session(self):
+        """Initialise ou charge une session existante"""
+        try:
+            self.vector_store = Chroma(
+                persist_directory=self.index_path,
+                embedding_function=self.embeddings
+            )
+        except Exception as e:
+            print(f"Création d'une nouvelle base de connaissances: {str(e)}")
+            self.vector_store = None
 
     def add(self, docs: dict):
+        """Ajoute des documents à la base de connaissances"""
         documents = []
         for doc_id, (title, link, content) in docs.items():
-            doc = Document(
-                page_content=content,
-                metadata={"page_title": title, "page_url": link},
-                id=doc_id
+            # Découpage du contenu en chunks si nécessaire
+            chunks = self.text_splitter.split_text(content)
+            
+            for i, chunk in enumerate(chunks):
+                # Ajoute un suffixe au titre si le document est découpé
+                chunk_title = f"{title} (partie {i+1})" if len(chunks) > 1 else title
+                
+                doc = Document(
+                    page_content=chunk,
+                    metadata={
+                        "page_title": chunk_title,
+                        "page_url": link,
+                        "doc_id": f"{doc_id}_{i}" if len(chunks) > 1 else doc_id,
+                        "chunk_id": i,
+                        "total_chunks": len(chunks)
+                    }
+                )
+                documents.append(doc)
+        
+        # Création ou mise à jour du vector store
+        if self.vector_store is None:
+            self.vector_store = Chroma.from_documents(
+                documents=documents,
+                embedding_function=self.embeddings,
+                persist_directory=self.index_path
             )
-            documents.append(doc)
+        else:
+            self.vector_store.add_documents(documents)
         
-        self.vector_store.add_documents(documents=documents)
+        # Persistance des données
+        self.vector_store.persist()
     
-    # async def add(self, docs: dict):
-    #     documents = []
-    #     for doc_id, (title, link, content) in docs.items():
-    #         doc = Document(
-    #             page_content=content,
-    #             metadata={"page_title": title, "page_url": link},
-    #             id=doc_id
-    #         )
-    #         documents.append(doc)
-        
-    #     # await asyncio.to_thread(self.chroma.add_documents, documents=documents)
-    #     await asyncio.to_thread(self.vector_store.add_documents,documents=documents)
+    async def aadd(self, docs: dict):
+        """Version asynchrone de add()"""
+        await asyncio.to_thread(self.add, docs)
 
-    def search(self, query, k=1):
-        results = self.vector_store.similarity_search(query, top_k=k)
-        return results
+    def search(self, query: str, k: int = 3) -> str:
+        """Recherche les documents pertinents"""
+        if not self.vector_store:
+            return "Aucun document n'a été chargé dans la base de connaissances."
+        
+        # Recherche des documents pertinents
+        results = self.vector_store.similarity_search_with_score(
+            query,
+            k=k
+        )
+        
+        # Construction du contexte
+        context = []
+        seen_docs = set()  # Pour éviter les doublons
+        
+        for doc, score in sorted(results, key=lambda x: x[1]):
+            # Extraction des métadonnées
+            title = doc.metadata.get('page_title', 'Sans titre')
+            url = doc.metadata.get('page_url', 'URL non disponible')
+            doc_id = doc.metadata.get('doc_id', '').split('_')[0]  # ID de base sans numéro de chunk
+            
+            # Évite les doublons du même document
+            if doc_id not in seen_docs:
+                seen_docs.add(doc_id)
+                
+                # Calcul du score de pertinence en pourcentage (inverse car plus le score est bas, plus c'est pertinent)
+                relevance = max(0, min(100, (1 - score) * 100))
+                
+                # Formatage du contexte
+                context_entry = (
+                    f"[Source: {title}] (Pertinence: {relevance:.1f}%)\n"
+                    f"URL: {url}\n"
+                    f"{doc.page_content}\n"
+                )
+                context.append(context_entry)
+        
+        return "\n\n".join(context) if context else "Aucune information pertinente trouvée."
+
+    def clear(self):
+        """Nettoie la base de connaissances (à appeler avec /quit)"""
+        if self.vector_store:
+            try:
+                self.vector_store.delete_collection()
+                if os.path.exists(self.index_path):
+                    shutil.rmtree(self.index_path)
+                self.vector_store = None
+            except Exception as e:
+                print(f"Erreur lors du nettoyage: {str(e)}")
+
+    def __len__(self):
+        """Retourne le nombre de documents dans la base"""
+        return self.vector_store._collection.count() if self.vector_store else 0
+
 
 if __name__ == "__main__":
     rag = Rag()
+
+    # Exemple de données
     docs = {
-        "1": ["Titre 1", "http://example.com/1", """La DeLorean présente aux personnages du film deux difficultés essentielles, qui seront un enjeu de taille tour à tour dans l'épisode I puis dans l'épisode III. En effet, le voyage dans le temps s'effectue seulement si deux conditions sine qua non sont remplies :
-
-le « convecteur temporel » doit être rechargé en énergie ;
-la voiture doit atteindre la vitesse de 88 miles par heure (141,619 28 km/h).
-Pour être précis, c'est le convecteur temporel (« Flux Capacitor » en VO) qui a besoin d'être déplacé dans l'espace à cette vitesse. Peu importe si la voiture roule ou non (elle peut voyager dans le temps tout en volant dans le second film) ou si son moteur fonctionne (le voyage dans le temps a lieu dans le troisième film alors que la machine, en panne d'essence, est alors propulsée par un train).
-
-Ces deux éléments sont indépendants l'un de l'autre. Le moteur de la DeLorean est alimenté par de l'essence ordinaire, mais le « convecteur temporel » nécessite une puissance électrique de 2,21 gigawatts (2,21 gigowatts, avec un « o » à la place du premier « a » dans la version originale à la suite d'une erreur de prononciation de Christopher Lloyd conservée au montage et conservée dans la version française) pour fonctionner. Il est alimenté tout d'abord par du plutonium puis, après les modifications apportées par Doc dans le futur, grâce à de simples détritus (le réacteur nucléaire ayant été remplacé par un appareil appelé le générateur de fusion, alias « Mr. Fusion Home Energy Reactor » en VO).
-
-Cependant, une petite entorse à cette règle existe à la fin du deuxième épisode, quand Doc est envoyé en 1885 : la foudre tombe sur la voiture immobile, ce qui ne devrait pas faire fonctionner le convecteur. On peut expliquer cela par le fait que le choc produit par la foudre ait fait tourner la voiture sur elle-même, lui faisant atteindre une vitesse - de rotation - de 88 mph, dans le film les flammes en forme de 99 montrent bien que la voiture a tourné sur elle-même.
-
-Par ailleurs, la DeLorean ne peut enclencher son processus de voyage à travers le temps que si ses deux portières sont fermées, comme on le voit lors de son ultime voyage de 1885 à 1985, à la fin du dernier volet de la trilogie"""],
-        "2": ["Titre 2", "http://example.com/2", "La tour eiffel mesure 12m de haut et 156 km de large"]
+        "1": ["La DeLorean et ses caractéristiques", "http://example.com/1", """La DeLorean présente aux personnages du film deux difficultés essentielles, qui seront un enjeu de taille tour à tour dans l'épisode I puis dans l'épisode III. En effet, le voyage dans le temps s'effectue seulement si deux conditions sine qua non sont remplies : le « convecteur temporel » doit être rechargé en énergie ; la voiture doit atteindre la vitesse de 88 miles par heure (141,619 28 km/h). Pour être précis, c'est le convecteur temporel (« Flux Capacitor » en VO) qui a besoin d'être déplacé dans l'espace à cette vitesse."""],
+        "2": ["Tour Eiffel", "http://example.com/2", "La tour eiffel mesure 12m de haut et 156 km de large"]
     }
 
-    rag.add(docs)
-    query = "convecteur temporel"
-    results = rag.search(query)
-    for result in results:
-        print(f"Document ID: {result['document'].metadata['id']}, Score: {result['score']}")
+    async def main():
+        # Test d'ajout de documents
+        await rag.aadd(docs)
+        print(f"Nombre de documents dans la base: {len(rag)}")
+        
+        # Test de recherche
+        queries = [
+            "qu'elle vitesse la DeLorean doit atteindre ?",
+            "parle moi du convecteur temporel",
+            "que peux-tu me dire sur la tour eiffel ?"
+        ]
+        
+        for query in queries:
+            print(f"\nQuestion : {query}")
+            response = rag.search(query)
+            print("\nRéponse :")
+            print(response)
+
+    asyncio.run(main())
