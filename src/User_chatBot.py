@@ -21,20 +21,27 @@ class User_chatBot:
         context: str
         self.running = True
         self.output = ""
-        
-        mem = self.history.load_memory_variables({}).get('history', "")
+    
+        try:
+            mem = self.history.load_memory_variables({}).get('history', "")
+        except Exception:
+            mem = ""
 
-        context = self.rag.search(input)
-        
+        try:
+            context = self.rag.search(input)
+        except Exception:
+            context = ""
+
         prompt = (
-            "Vous êtes un assistant intelligent. Utilisez les informations suivantes pour aider l'utilisateur.\n\n"
-            "Mémoire du chatbot (à ne pas montrer à l'utilisateur) :\n"
-            f"{mem}\n\n"
-            "Contexte pertinent :\n"
+            "Vous êtes un assistant intelligent et concis. "
+            "Répondez de manière naturelle et directe à la question de l'utilisateur.\n\n"
+            "Contexte :\n"
             f"{context}\n\n"
-            "Question de l'utilisateur :\n"
+            "Historique de la conversation (à ne pas mentionner directement) :\n"
+            f"{mem}\n\n"
+            "Question :\n"
             f"{input}\n\n"
-            "Répondez de manière claire et CONCISE et avec une mise en forme lisible et structuré :\n"
+            "Réponse :"
         )
         
         response = self.ollama_model.generate(
@@ -56,7 +63,7 @@ class User_chatBot:
 
         
         self.history.save_context({"input": input}, {"output": self.output})
-        
+        self.running = False
         return 0
     
 if __name__ == "__main__":
