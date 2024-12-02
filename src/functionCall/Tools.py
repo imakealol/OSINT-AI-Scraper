@@ -2,7 +2,7 @@
 from langchain_core.tools import Tool, tool
 from pydantic import BaseModel, Field
 from typing import Optional
-from AIWebpageScraper import AIWebpageScraper
+from src.WebpageResultsRetrieval import AIWebpageScraper
 from urllib.parse import urlparse
 
 class ScrapingInput(BaseModel):

@@ -23,7 +23,7 @@ class User_chatBot:
         self.output = ""
         
         # Initialisation de la mémoire
-        self.history = ConversationSummaryMemory(llm=self.ollama_model)
+        self.history = ConversationSummaryMemory(llm=self.llm_with_tools)
         self.running = False
         
         # Configuration du prompt de base
@@ -64,7 +64,7 @@ Réponse:"""
             )
             
             # Générer la réponse
-            response = self.ollama_model.generate(
+            response = self.llm_with_tools.generate(
                 prompts=[prompt],
                 stream=True
             )
