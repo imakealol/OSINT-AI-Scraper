@@ -24,7 +24,8 @@ class WebScrapingOrchestrator:
             number_of_urls = len(data["urls"])
             workers = min(number_of_urls, 10)  # Limit workers to 10
             # Construct and run the pytest command to scrape the URLS in parallel
-            command = f'pytest -n {workers} --uc "./src/WebContentExtractor.py" --extension-zip "./src/browserExtensions/cjpalhdlnbpafiamejdnhcphjbkeiagm.zip,./src/browserExtensions/cjpalhdlnbpafiamejdnhcphjbkeiagm.zip,./src/browserExtensions/mlomiejdfkolichcflejclcbmpeaniij.zip" --headless'
+            browser_extensions_dir = os.path.abspath("./src/browserExtensions")
+            command = f'pytest -n {workers} --uc "./src/WebContentExtractor.py" --extension-dir "{browser_extensions_dir}/mlomiejdfkolichcflejclcbmpeaniij,{browser_extensions_dir}/dknlfmjaanfblgfdfebhijalfmhmjjjo,{browser_extensions_dir}/cjpalhdlnbpafiamejdnhcphjbkeiagm" --headless'
             subprocess.run(command, shell=True, check=True)
         
         os.remove(temp_urls_file)
@@ -39,6 +40,7 @@ class WebScrapingOrchestrator:
 if __name__ == "__main__":
     # Writing JSON data into URLS_FILE (will be done in another class in the actual implementation)
     os.makedirs(TEMP_DIR, exist_ok=True)
+    print(os.path.abspath("./src/browserExtensions"))
     # Example of JSON data contained in URLS_FILE
     data = {
         "urls": [

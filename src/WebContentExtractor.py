@@ -5,6 +5,7 @@ import uuid
 from bs4 import BeautifulSoup
 from readability import Document
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
 
@@ -34,14 +35,19 @@ class WebContentExtractor:
     def scrape_page(self) -> dict:
         """Scrape a web page."""
         try:
-            self.sb.driver.uc_open_with_tab("chrome-extension://mlomiejdfkolichcflejclcbmpeaniij/pages/onboarding/index.html#@onboarding-views-success") # Activate the extension "Ghostery"
-            self.sb.driver.uc_open_with_tab(self.url)
+            self.sb.wait_for_ready_state_complete()
+            self.sb.wait(2)
+            self.sb.open(self.url)
+            self.sb.execute_script("location.reload(true);")
             self.sb.wait_for_ready_state_complete()
             self.sb.wait(5)
-            html_content = self.sb.driver.get_page_source()
+            html_content = self.sb.get_page_source()
+
             readable_content = self.extract_html_content(html_content)
             cleaned_content = self.clean_html_content(readable_content)
-            return {"url": self.url, "status": "success", "content": cleaned_content}
+            readable_content2 = self.extract_html_content(cleaned_content)
+            cleaned_content2 = self.clean_html_content(readable_content2)
+            return {"url": self.url, "status": "success", "content": cleaned_content2}
         except Exception as e:
             return {"url": self.url, "status": "error", "error": str(e)}
 
