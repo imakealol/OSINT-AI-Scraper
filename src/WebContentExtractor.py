@@ -3,9 +3,8 @@ import json
 import os
 import uuid
 from bs4 import BeautifulSoup
-from readability import Document
 from dotenv import load_dotenv
-from lxml import etree
+import trafilatura
 
 load_dotenv()
 
@@ -44,47 +43,47 @@ class WebContentExtractor:
             self.sb.wait(5)
             html_content = self.sb.get_page_source()
 
-            readable_content = self.extract_content_with_lxml(html_content)
+            # Use Trafilatura for extraction
+            readable_content = self.extract_html_content(html_content)
 
+            # Clean the extracted content
             cleaned_content = self.clean_html_content(readable_content)
             
             return {"url": self.url, "status": "success", "content": cleaned_content}
         except Exception as e:
             return {"url": self.url, "status": "error", "error": str(e)}
 
-    def extract_content_with_lxml(self, html_content) -> str:
-        """Extract readable content using Readability and lxml."""
+    def extract_html_content(self, html_content) -> str:
+        """Extract readable content using Trafilatura."""
         try:
-            doc = Document(html_content)
-            raw_html = doc.summary()
-
-            # Utilisation de lxml pour parser le HTML extrait
-            parser = etree.HTMLParser()
-            tree = etree.fromstring(raw_html, parser=parser)
-            body = tree.find(".//body")
-
-            # Convertir le body en chaîne HTML si trouvé
-            return etree.tostring(body, pretty_print=True, method="html", encoding="unicode") if body is not None else raw_html
+            # Trafilatura expects the raw HTML string
+            extracted_content = trafilatura.extract(html_content)
+            if not extracted_content:
+                raise Exception("Trafilatura failed to extract content.")
+            return extracted_content
         except Exception as e:
-            raise Exception(f"Error extracting content with lxml: {e}")
+            raise Exception(f"Error extracting readable content with Trafilatura: {e}")
 
-    def clean_html_content(self, body_content) -> str:
-        """Clean the HTML content."""
+    def clean_html_content(self, content) -> str:
+        """Clean the content extracted by Trafilatura."""
         try:
-            soup = BeautifulSoup(body_content, "html.parser")
+            # Parse the content as HTML for additional cleaning if necessary
+            soup = BeautifulSoup(content, "html.parser")
 
+            # Remove undesired elements (if any remain after extraction)
             for tag in soup(["script", "style", "noscript", "meta", "link"]):
                 tag.decompose()
 
+            # Replace anchor tags with text + URL format
             for a_tag in soup.find_all("a", href=True):
                 link_text = a_tag.get_text(strip=True)
                 a_tag.replace_with(f"{link_text} ({a_tag['href']})")
 
+            # Extract and return cleaned text
             cleaned_content = soup.get_text(separator="\n")
             return "\n".join(line.strip() for line in cleaned_content.splitlines() if line.strip())
         except Exception as e:
             raise Exception(f"Error cleaning content: {e}")
-
 
 # Test function with parameterized URLs
 @pytest.mark.parametrize("url", load_urls())
