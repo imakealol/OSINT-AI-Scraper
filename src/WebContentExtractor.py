@@ -5,7 +5,7 @@ import uuid
 from bs4 import BeautifulSoup
 from readability import Document
 from dotenv import load_dotenv
-import time
+from lxml import etree
 
 load_dotenv()
 
@@ -36,28 +36,37 @@ class WebContentExtractor:
         """Scrape a web page."""
         try:
             self.sb.wait_for_ready_state_complete()
-            self.sb.wait(2)
+            self.sb.wait_for_angularjs()
             self.sb.open(self.url)
             self.sb.execute_script("location.reload(true);")
             self.sb.wait_for_ready_state_complete()
+            self.sb.wait_for_angularjs()
             self.sb.wait(5)
             html_content = self.sb.get_page_source()
 
-            readable_content = self.extract_html_content(html_content)
+            readable_content = self.extract_content_with_lxml(html_content)
+
             cleaned_content = self.clean_html_content(readable_content)
-            readable_content2 = self.extract_html_content(cleaned_content)
-            cleaned_content2 = self.clean_html_content(readable_content2)
-            return {"url": self.url, "status": "success", "content": cleaned_content2}
+            
+            return {"url": self.url, "status": "success", "content": cleaned_content}
         except Exception as e:
             return {"url": self.url, "status": "error", "error": str(e)}
 
-    def extract_html_content(self, html_content) -> str:
-        """Extract readable content with Readability."""
+    def extract_content_with_lxml(self, html_content) -> str:
+        """Extract readable content using Readability and lxml."""
         try:
             doc = Document(html_content)
-            return doc.summary()
+            raw_html = doc.summary()
+
+            # Utilisation de lxml pour parser le HTML extrait
+            parser = etree.HTMLParser()
+            tree = etree.fromstring(raw_html, parser=parser)
+            body = tree.find(".//body")
+
+            # Convertir le body en chaîne HTML si trouvé
+            return etree.tostring(body, pretty_print=True, method="html", encoding="unicode") if body is not None else raw_html
         except Exception as e:
-            raise Exception(f"Error extracting readable content: {e}")
+            raise Exception(f"Error extracting content with lxml: {e}")
 
     def clean_html_content(self, body_content) -> str:
         """Clean the HTML content."""
