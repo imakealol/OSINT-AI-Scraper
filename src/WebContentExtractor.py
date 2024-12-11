@@ -2,10 +2,8 @@ import pytest
 import json
 import os
 import uuid
-from bs4 import BeautifulSoup
-from readability import Document
 from dotenv import load_dotenv
-from lxml import etree
+import trafilatura
 
 load_dotenv()
 
@@ -35,55 +33,31 @@ class WebContentExtractor:
     def scrape_page(self) -> dict:
         """Scrape a web page."""
         try:
+            self.sb.open(self.url)
             self.sb.wait_for_ready_state_complete()
             self.sb.wait_for_angularjs()
-            self.sb.open(self.url)
             self.sb.execute_script("location.reload(true);")
             self.sb.wait_for_ready_state_complete()
             self.sb.wait_for_angularjs()
-            self.sb.wait(5)
             html_content = self.sb.get_page_source()
 
-            readable_content = self.extract_content_with_lxml(html_content)
-
-            cleaned_content = self.clean_html_content(readable_content)
+            # Use Trafilatura for extraction
+            readable_content = self.extract_html_content(html_content)
             
-            return {"url": self.url, "status": "success", "content": cleaned_content}
+            return {"url": self.url, "status": "success", "content": readable_content}
         except Exception as e:
             return {"url": self.url, "status": "error", "error": str(e)}
 
-    def extract_content_with_lxml(self, html_content) -> str:
-        """Extract readable content using Readability and lxml."""
+    def extract_html_content(self, html_content) -> str:
+        """Extract readable content using Trafilatura."""
         try:
-            doc = Document(html_content)
-            raw_html = doc.summary()
-
-            # Utilisation de lxml pour parser le HTML extrait
-            parser = etree.HTMLParser()
-            tree = etree.fromstring(raw_html, parser=parser)
-            body = tree.find(".//body")
-
-            # Convertir le body en chaîne HTML si trouvé
-            return etree.tostring(body, pretty_print=True, method="html", encoding="unicode") if body is not None else raw_html
+            # Trafilatura expects the raw HTML string
+            extracted_content = trafilatura.extract(html_content, include_links=True, favor_recall=True)
+            if not extracted_content:
+                raise Exception("Trafilatura failed to extract content.")
+            return extracted_content
         except Exception as e:
-            raise Exception(f"Error extracting content with lxml: {e}")
-
-    def clean_html_content(self, body_content) -> str:
-        """Clean the HTML content."""
-        try:
-            soup = BeautifulSoup(body_content, "html.parser")
-
-            for tag in soup(["script", "style", "noscript", "meta", "link"]):
-                tag.decompose()
-
-            for a_tag in soup.find_all("a", href=True):
-                link_text = a_tag.get_text(strip=True)
-                a_tag.replace_with(f"{link_text} ({a_tag['href']})")
-
-            cleaned_content = soup.get_text(separator="\n")
-            return "\n".join(line.strip() for line in cleaned_content.splitlines() if line.strip())
-        except Exception as e:
-            raise Exception(f"Error cleaning content: {e}")
+            raise Exception(f"Error extracting readable content with Trafilatura: {e}")
 
 
 # Test function with parameterized URLs
@@ -94,5 +68,5 @@ def test_multi_threaded(sb, url):
     result = scraper.scrape_page()
 
     os.makedirs(TEMP_DIR, exist_ok=True)
-    with open(temp_file, "a", encoding="utf-8") as f:
-        f.write(json.dumps(result))
+    with open(temp_file, "w", encoding="utf-8") as f:
+        json.dump(result, f)
