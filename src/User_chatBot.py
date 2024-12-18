@@ -2,6 +2,22 @@ from langchain_ollama.llms import OllamaLLM
 from langchain.memory import ConversationSummaryMemory
 from rag.Rag import Rag
 # from langchain.llms.base import BaseLanguageModel
+from fc.func import get_weather
+
+functions_registry = {
+    "get_weather": {
+        "func": get_weather,
+        "description": "Retourne la météo pour une ville donnée.",
+        "parameters": {
+            "city": "Nom de la ville à rechercher."
+        }
+    },
+}
+
+def detect_function(input_text: str):
+    if "météo" in input_text.lower():
+        return "get_weather", {"city": input_text.split()[-1]}  # Exemple basique
+    return None, {}
 
 class User_chatBot:
     def __init__(self, model:str = "mistral:latest", ollama_options:dict = None):
@@ -21,7 +37,19 @@ class User_chatBot:
         context: str
         self.running = True
         self.output = ""
-    
+
+        func_name, params = detect_function(input)
+        if func_name:
+            try:
+                func = functions_registry[func_name]['func']
+                result = func(**params)
+                self.output = result
+                yield result
+            except Exception as e:
+                self.output = f"Erreur lors de l'appel de la fonction {func_name} : {str(e)}"
+                yield self.output
+            return 0
+
         try:
             mem = self.history.load_memory_variables({}).get('history', "")
         except Exception:
@@ -29,7 +57,8 @@ class User_chatBot:
 
         try:
             context = self.rag.search(input)
-        except Exception:
+        except Exception as e:
+            print(f"Erreur dans la recherche RAG : {e}")
             context = ""
 
         prompt = (
