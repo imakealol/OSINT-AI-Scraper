@@ -1,4 +1,4 @@
-from User_chatBot import User_chatBot
+from src.User_chatBot import User_chatBot
 import os
 import sys
 
