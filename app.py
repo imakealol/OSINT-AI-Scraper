@@ -1,10 +1,8 @@
 from flask import Flask, request, jsonify, Response
-from src.User_chatBot import User_chatBot  # Chemin vers votre chatbot
+from src.User_chatBot import User_chatBot  
 
-# Initialisation de Flask
 app = Flask(__name__)
 
-# Instanciation de l'objet User_chatBot
 chatbot = User_chatBot(model="mistral:latest")
 
 @app.route("/", methods=["GET"])
@@ -25,4 +23,5 @@ def chat():
     return Response(generate(), content_type="text/plain; charset=utf-8")
 
 if __name__ == "__main__":
+    # app.run(debug=True)
     app.run(debug=True)
