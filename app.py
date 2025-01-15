@@ -1,13 +1,17 @@
-from flask import Flask, request, jsonify, Response
-from src.User_chatBot import User_chatBot  
+from flask import Flask, request, render_template, redirect, url_for, session
+from flask_socketio import SocketIO, join_room, leave_room, send
 
+# Initialisation de Flask
 app = Flask(__name__)
-
+app.config['SECRET_KEY'] = 'vnkdjnfjknfl1232#'
+socketio = SocketIO(app)
+rooms = {}
 chatbot = User_chatBot(model="mistral:latest")
 
 @app.route("/", methods=["GET"])
 def index():
     return "Bienvenue sur le chatbot Flask ! Utilisez l'endpoint /chat pour discuter."
+
 
 @app.route("/chat", methods=["POST"])
 def chat():
