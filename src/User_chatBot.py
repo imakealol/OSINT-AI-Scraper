@@ -1,8 +1,8 @@
 from langchain_ollama.llms import OllamaLLM
 from langchain.memory import ConversationSummaryMemory
-from rag.Rag import Rag
+from src.rag.Rag import Rag
 # from langchain.llms.base import BaseLanguageModel
-from fc.func import get_weather
+from src.fc.func import get_weather
 
 functions_registry = {
     "get_weather": {
