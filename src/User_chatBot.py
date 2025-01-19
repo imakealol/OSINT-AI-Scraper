@@ -1,107 +1,101 @@
 from langchain_ollama.llms import OllamaLLM
 from langchain.memory import ConversationSummaryMemory
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from rag.Rag import Rag
-from functionCall.Tools import WebTools
+from src.rag.Rag import Rag
+# from langchain.llms.base import BaseLanguageModel
+from src.fc.func import get_weather
+
+functions_registry = {
+    "get_weather": {
+        "func": get_weather,
+        "description": "Retourne la météo pour une ville donnée.",
+        "parameters": {
+            "city": "Nom de la ville à rechercher."
+        }
+    },
+}
+
+def detect_function(input_text: str):
+    if "météo" in input_text.lower():
+        return "get_weather", {"city": input_text.split()[-1]}  # Exemple basique
+    return None, {}
 
 class User_chatBot:
     def __init__(self, model:str = "mistral:latest", ollama_options:dict = None):
-        self._disable_langchain_debug()
         
-        # Initialisation du modèle
         self.ollama_model = OllamaLLM(
             model=model,
-            options=ollama_options if ollama_options else {'temperature': 1}# vérifier le paramétrage de la température 0 pour déterministe langchain et 1 pour ollama_python
-        )
-        
-        # Initialisation des composants
-        self.web_tools = WebTools()
-        self.tools = self.web_tools.get_tools()
-        self.llm_with_tools = self.ollama_model.bind_tools(self.tools)
-
-        self.rag = Rag()
+            options=ollama_options if ollama_options else {'temperature': 1} # vérifier le paramétrage de la température 0 pour déterministe langchain et 1 pour ollama_python
+            )
         self.output = ""
-        
-        # Initialisation de la mémoire
-        self.history = ConversationSummaryMemory(llm=self.llm_with_tools)
+        ConversationSummaryMemory.model_rebuild()
+        self.history = ConversationSummaryMemory(llm=self.ollama_model)
         self.running = False
+        self.rag = Rag()
         
-        # Configuration du prompt de base
-        self.prompt_template = """Vous êtes un assistant IA utile et concis. Utilisez les informations suivantes pour répondre à la question.
-
-Contexte disponible:
-{context}
-
-Historique de la conversation (à ne pas mentionner directement):
-{history}
-
-Question: {input}
-
-Réponse:"""
-
-    def _disable_langchain_debug(self):
-        """Désactive les logs de debug de langchain"""
-        import logging
-        for name in logging.Logger.manager.loggerDict.keys():
-            if 'langchain' in name.lower():
-                logging.getLogger(name).setLevel(logging.ERROR)
-
-    async def ans(self, user_input: str):
-        """Génère une réponse à l'input utilisateur"""
+    def ans(self, input: str):
+        prompt: str
+        context: str
         self.running = True
         self.output = ""
-        
-        try:
-            # Obtenir contexte et historique
-            context = self.rag.search(user_input)
-            history = self.history.load_memory_variables({}).get('history', '')
-            
-            # Construire le prompt
-            prompt = self.prompt_template.format(
-                context=context,
-                history=history,
-                input=user_input
-            )
-            
-            # Générer la réponse
-            response = self.llm_with_tools.generate(
-                prompts=[prompt],
-                stream=True
-            )
-            
-            # Traiter la réponse par morceaux
-            for chunk in response:
-                if isinstance(chunk, tuple) and chunk[0] == 'generations':
-                    generation_list = chunk[1]
-                    if generation_list and isinstance(generation_list[0], list):
-                        generation_chunk = generation_list[0][0] 
-                        if hasattr(generation_chunk, 'text'):
-                            chunk_text = generation_chunk.text
-                            self.output += chunk_text
-                            yield chunk_text
-            
-            # Sauvegarder le contexte si une réponse a été générée
-            if self.output:
-                self.history.save_context(
-                    {"input": user_input},
-                    {"output": self.output}
-                )
-            
-        except Exception as e:
-            error_msg = f"Désolé, j'ai rencontré une erreur : {str(e)}"
-            self.output = error_msg
-            yield error_msg
-        
-        finally:
-            self.running = False
 
+        func_name, params = detect_function(input)
+        if func_name:
+            try:
+                func = functions_registry[func_name]['func']
+                result = func(**params)
+                self.output = result
+                yield result
+            except Exception as e:
+                self.output = f"Erreur lors de l'appel de la fonction {func_name} : {str(e)}"
+                yield self.output
+            return 0
+
+        try:
+            mem = self.history.load_memory_variables({}).get('history', "")
+        except Exception as e:
+            self.output = f"Erreur lors de l'appel de la fonction Memoire : {str(e)}"
+            mem = ""
+
+        try:
+            context = self.rag.search(input)
+        except Exception as e:
+            print(f"Erreur dans la recherche RAG : {e}")
+            context = ""
+
+        prompt = (
+            "Vous êtes un assistant intelligent et concis. "
+            "Répondez de manière naturelle et directe à la question de l'utilisateur.\n\n"
+            "Contexte :\n"
+            f"{context}\n\n"
+            "Historique de la conversation (à ne pas mentionner directement) :\n"
+            f"{mem}\n\n"
+            "Question :\n"
+            f"{input}\n\n"
+            "Réponse :"
+        )
+        
+        response = self.ollama_model.generate(
+            prompts=[prompt],
+            stream=True
+        )
+        
+        for chunk in response:
+            if isinstance(chunk, tuple) and chunk[0] == 'generations':
+                generation_list = chunk[1]
+                if generation_list and isinstance(generation_list[0], list):
+                    generation_chunk = generation_list[0][0] 
+                    if hasattr(generation_chunk, 'text'):
+                        self.output += generation_chunk.text
+                        yield generation_chunk.text
+            
+        
+
+
+        
+        self.history.save_context({"input": input}, {"output": self.output})
+        self.running = False
+        return 0
+    
 if __name__ == "__main__":
-    import asyncio
-    
-    async def test():
-        bot = User_chatBot()
-        async for chunk in bot.ans("Bonjour!"):
-            print(chunk, end='', flush=True)
-        print("\nTest terminé.")
-    
-    asyncio.run(test())
+    model = User_chatBot(model="mistral:latest")
+    model.ans("Hello")
