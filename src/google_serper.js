@@ -9,7 +9,7 @@ results.forEach((result) => {
     const link = result.querySelector('[jsname="UWckNb"]')?.getAttribute("href") || "";
     const date = result.querySelector(".LEwnzc.Sqrs4e span")?.innerText || "";
     const title = result.querySelector(".LC20lb.MBeuO.DKV0Md")?.innerText || "";
-    const snippetContainer = result.querySelector('.VwiC3b');
+    const snippetContainer = result.querySelector('.VwiC3b') || result.querySelector('.ITZIwc');
     const snippet = snippetContainer?.lastChild.nodeType === Node.TEXT_NODE 
     ? snippetContainer?.lastChild.textContent.trim()
     : snippetContainer?.lastElementChild.innerText;
